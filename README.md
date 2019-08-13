@@ -1,11 +1,11 @@
-# Sinc_code_markdown
+# SincCodeMarkdown
 
 Utilitári osimples para sincronizar marcações de script/código em arquivos Markdown.
 
 ## Uso
 
 ```bash
-py sinc_code_markdown README.md
+py sincroniza .\README.md --atualuzar
 ```
 
 Pronto, o resultado será:
