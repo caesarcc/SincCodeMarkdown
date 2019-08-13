@@ -1,2 +1,4 @@
 # Log file
 *.log
+/.vscode/.ropeproject/config.py
+/.vscode/.ropeproject/objectdb
