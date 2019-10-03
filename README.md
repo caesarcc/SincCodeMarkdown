@@ -5,7 +5,7 @@ Utilitári osimples para sincronizar marcações de script/código em arquivos M
 ## Uso
 
 ```bash
-py sincroniza .\README.md --atualuzar
+py sincroniza .\README.md --atualizar
 ```
 
 Pronto, o resultado será:

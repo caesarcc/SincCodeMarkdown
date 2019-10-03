@@ -2,3 +2,6 @@
 *.log
 /.vscode/.ropeproject/config.py
 /.vscode/.ropeproject/objectdb
+build/
+dist/
+__pycache__/
