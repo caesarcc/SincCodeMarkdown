@@ -4,7 +4,7 @@ block_cipher = None
 
 
 a = Analysis(['sinc_code_markdown.py'],
-             pathex=['C:\\Users\\caesa\\Documents\\Desenvolvimento\\sinc_code_markdown'],
+             pathex=['C:\\Projetos\\RIC\\SincronizaMarkdownComCodigo'],
              binaries=[],
              datas=[],
              hiddenimports=[],

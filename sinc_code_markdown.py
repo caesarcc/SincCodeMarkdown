@@ -1,6 +1,5 @@
 import os
 import sys
-from functools import reduce
 import re
 import numpy as np
 import multiprocessing
@@ -14,8 +13,8 @@ def salva_arquivo_novo(arquivo, nome):
             sg.Popup(
                 'Mandou atualizar o arquivo {} é sério?'.format(nome),
                 title='Aviso!')
-        with open(nome, "w+ ", encoding='UTF-8') as arquivo:
-                arquivo.writelines([line + '\n' for line in arquivo])
+        with open(nome, "w+", encoding='UTF-8') as arquivo_saida:
+            arquivo_saida.writelines([line + '\n' for line in arquivo])
         # else:
         #    [cprint(line, 'white') for line in arquivo]
     else:
@@ -23,8 +22,12 @@ def salva_arquivo_novo(arquivo, nome):
 
 
 def altera_bloco(arquivo, inicio, fim, script):
+    tamanho_maior_linha = len(max(max(arquivo, key=len), max(script, key=len)))
+    arquivo[0] = arquivo[0] + (' ' * tamanho_maior_linha)
     novo_arquivo_atualizado = np.delete(arquivo, np.arange(inicio, fim))
-    return np.insert(novo_arquivo_atualizado, inicio, script)
+    script_atualizado = np.insert(novo_arquivo_atualizado, inicio, script)
+    script_atualizado[0] = script_atualizado[0].rstrip()
+    return script_atualizado
 
 
 def compara_bloco(bloco_externo, bloco_markdown):
@@ -50,8 +53,6 @@ def processa_script(
     if not compara_bloco(
             linhas_do_arquivoScript,
             linhas_do_arquivo[linhaInicioMarca + 1:linhaFimMarca]):
-        if type(linhas_do_arquivo).__module__ != np.__name__:
-            linhas_do_arquivo = np.array(linhas_do_arquivo)
         return altera_bloco(
             linhas_do_arquivo, linhaInicioMarca + 1,
             linhaFimMarca, linhas_do_arquivoScript)
@@ -63,32 +64,36 @@ def processa_blocos(linhas_do_arquivo, nome_do_arquivo, inicio=0):
         indice for indice, linha in enumerate(linhas_do_arquivo)
         if indice > inicio and linha.startswith('```')]
 
-    if indices_do_codigo and len(indices_do_codigo) > 1:
-        if not linhas_do_arquivo[indices_do_codigo[0]].rstrip().endswith('```'):
-            busca = re.search(
-                '<!--(.*)-->',
-                linhas_do_arquivo[indices_do_codigo[0] - 1])
-            if busca and len(busca.groups()) == 1 and busca.group(1).strip():
-                arquivoScript = carrega_script(
-                    busca.group(1).strip(),
-                    nome_do_arquivo)
-                qtd_linhas_adicionadas = len(arquivoScript) + 1
-                linhas_do_arquivo = processa_script(
-                    linhas_do_arquivo,
-                    arquivoScript,
-                    indices_do_codigo[0],
-                    indices_do_codigo[1])
-            else:
-                qtd_linhas_adicionadas = indices_do_codigo[1] - 1
-                sg.Popup(nome_do_arquivo + " - Configuração do script de \
-                    importação inválido no bloco \
-                    [" + str(indices_do_codigo[0] + 1) + " .. \
-                    " + str(indices_do_codigo[1] + 1) + "]", title="Aviso!")
-            return processa_blocos(
+    if indices_do_codigo and \
+       len(indices_do_codigo) > 1 and not \
+       linhas_do_arquivo[indices_do_codigo[0]].rstrip().endswith('```'):
+
+        busca = re.search(
+            '<!--(.*)-->',
+            linhas_do_arquivo[indices_do_codigo[0] - 1])
+
+        if busca and len(busca.groups()) == 1 and busca.group(1).strip():
+            arquivoScript = carrega_script(
+                busca.group(1).strip(),
+                nome_do_arquivo)
+            qtd_linhas_adicionadas = len(arquivoScript) + 1
+            linhas_do_arquivo = processa_script(
                 linhas_do_arquivo,
-                nome_do_arquivo,
-                indices_do_codigo[0] + qtd_linhas_adicionadas)
-        return linhas_do_arquivo
+                arquivoScript,
+                indices_do_codigo[0],
+                indices_do_codigo[1])
+        else:
+            qtd_linhas_adicionadas = indices_do_codigo[1] - 1
+            sg.Popup(nome_do_arquivo + " - Configuração do script de \
+                importação inválido no bloco \
+                [" + str(indices_do_codigo[0] + 1) + " .. \
+                " + str(indices_do_codigo[1] + 1) + "]", title="Aviso!")
+        return processa_blocos(
+            linhas_do_arquivo,
+            nome_do_arquivo,
+            indices_do_codigo[0] + qtd_linhas_adicionadas)
+
+    return linhas_do_arquivo
 
 
 def processa_arquivo(nome_do_arquivo):
@@ -113,7 +118,7 @@ def processa_arquivo(nome_do_arquivo):
 
 def lista_arquivos(diretorio="."):
     arquivos = os.listdir(diretorio)
-    if len(sys.argv) == 2:
+    if len(sys.argv) > 2:
         diretorio = sys.argv[1]
         if os.path.isfile(diretorio):
             arquivo = os.path.basename(diretorio)
@@ -139,16 +144,19 @@ def lista_arquivos(diretorio="."):
 if "__main__" == __name__:
     try:
         arquivos = lista_arquivos()
+        sg.theme('DarkAmber')
+        sg.change_look_and_feel('DefaultNoMoreNagging')
 
-        # processamento paralelo (roda um arquivo por CPU disponível)
-        num_cores = multiprocessing.cpu_count()
-        Parallel(n_jobs=num_cores)(
-            delayed(processa_arquivo)(nome_do_arquivo)
-            for nome_do_arquivo in arquivos)
-
-        # processamento normal para debug
-        # for nome_do_arquivo in arquivos:
-        #    processaArquivo(nome_do_arquivo)
+        if "-debug" in sys.argv:
+            # processamento normal para debug
+            for nome_do_arquivo in arquivos:
+                processa_arquivo(nome_do_arquivo)
+        else:
+            # processamento paralelo (roda um arquivo por CPU disponível)
+            num_cores = multiprocessing.cpu_count()
+            Parallel(n_jobs=num_cores)(
+                delayed(processa_arquivo)(nome_do_arquivo)
+                for nome_do_arquivo in arquivos)
 
     except AssertionError as error:
         sg.PopupError(error, title='Erro Fatal!')
