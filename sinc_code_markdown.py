@@ -144,7 +144,6 @@ def lista_arquivos(diretorio="."):
 if "__main__" == __name__:
     try:
         arquivos = lista_arquivos()
-        sg.theme('DarkAmber')
         sg.change_look_and_feel('DefaultNoMoreNagging')
 
         if "-debug" in sys.argv:
